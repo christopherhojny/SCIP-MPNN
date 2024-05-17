@@ -1,0 +1,3 @@
+gnn/nodeclassify/useenhancedbounds = FALSE
+gnn/nodeclassify/useinputbasedbounds = FALSE
+separating/ReLUnode/freq = -1

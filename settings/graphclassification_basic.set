@@ -1,0 +1,3 @@
+gnn/robustclassify/useenhancedbounds = FALSE
+gnn/robustclassify/useinputbasedbounds = FALSE
+separating/ReLUrc/freq = -1
