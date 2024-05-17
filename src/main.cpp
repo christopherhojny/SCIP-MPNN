@@ -54,6 +54,18 @@ SCIP_RETCODE SCIPGNN(
    SCIP_CALL( readGNN(scip, gnnfile, &gnndata, &success) );
    SCIP_CALL( readGNNProb(scip, problemfile, &gnnprobdata, &success) );
 
+   // get name of problem instance
+   std::string instancename;
+   size_t posdelim;
+   posdelim = problemfile.rfind("/");
+   if( posdelim < problemfile.npos )
+      instancename = problemfile.substr(posdelim + 1, problemfile.npos - posdelim);
+   else
+      instancename = problemfile;
+
+   char name[SCIP_MAXSTRLEN];
+   strcpy(name, instancename.c_str());
+
    // load basic plugins
    SCIP_CALL( includeSCIPGNNPlugins(scip, SCIPgetGNNProbType(gnnprobdata)) );
 
@@ -107,7 +119,7 @@ SCIP_RETCODE SCIPGNN(
    }
    SCIPinfoMessage(scip, 0, "\n");
 
-   SCIP_CALL( SCIPcreateModel(scip, gnndata, gnnprobdata) );
+   SCIP_CALL( SCIPcreateModel(scip, gnndata, gnnprobdata, name) );
 
    /* check whether we only write the model or whether we actually solve it */
    char* onlywrite;

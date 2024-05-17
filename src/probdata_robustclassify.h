@@ -30,8 +30,9 @@ SCIP_RETCODE SCIPprobdataCreateRobustClassify(
                                               *   applying an activation function */
    SCIP_Real**           ubgnnoutputvars,    /**< array of upper bounds output at GNN nodes */
    SCIP_Real**           ubauxvars,          /**< array of upper bound on auxiliary variables */
-   SCIP_Real**           ubnodecontent       /**< array storing upper bounds on node content before
+   SCIP_Real**           ubnodecontent,      /**< array storing upper bounds on node content before
                                               *   applying an activation function */
+   SCIP_Bool             uselprelax          /**< whether we just want to solve the LP relaxation */
    );
 
 /** returns number of layers in GNN */
@@ -77,6 +78,23 @@ SCIP_VAR*** SCIPgetProbdataRobustClassifyIsActiveVars(
 /** returns variables modeling adjacency */
 SCIP_VAR** SCIPgetProbdataRobustClassifyAdjacencyVars(
    SCIP_PROBDATA*        probdata            /**< problem data */
+   );
+
+SCIP_RETCODE SCIPsetOBBTobjective(
+   SCIP*                 scip,               /**< SCIP data structure */
+   int                   nfeatures,          /**< number of features */
+   int                   layeridx,           /**< index of layer */
+   int                   nodeidx,            /**< index of node of underlying graph */
+   int                   featureidx,         /**< index of feature */
+   SCIP_Bool             maximize            /**< whether objective sense is maximization */
+   );
+
+SCIP_RETCODE SCIPresetOBBTobjective(
+   SCIP*                 scip,               /**< SCIP data structure */
+   int                   nfeatures,          /**< number of features */
+   int                   layeridx,           /**< index of layer */
+   int                   nodeidx,            /**< index of node of underlying graph */
+   int                   featureidx          /**< index of feature */
    );
 
 #ifdef __cplusplus

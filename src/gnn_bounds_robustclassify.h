@@ -44,7 +44,8 @@ SCIP_RETCODE SCIPcomputeBoundsGNNRobustClassifyLayer(
    SCIP_Real*            lbgnnoutputvarsprev, /**< lower bounds on output at previous GNN layer */
    SCIP_Real*            lbauxvarsprev,      /**< lower bounds on auxiliary variables at previous layer */
    SCIP_Real*            ubgnnoutputvarsprev, /**< upper bounds on output at previous GNN layer */
-   SCIP_Real*            ubauxvarsprev       /**< upper bounds on auxiliary variables at previous layer */
+   SCIP_Real*            ubauxvarsprev,      /**< upper bounds on auxiliary variables at previous layer */
+   SCIP_Bool             allocatearrays      /**< whether arrays for bounds need to be allocated */
    );
 
 /** computes bounds for all variables and expressions in GNN */

@@ -25,7 +25,8 @@ extern
 SCIP_RETCODE SCIPcreateModel(
    SCIP*                 scip,               /**< SCIP data structure */
    GNN_DATA*             gnndata,            /**< data about GNN */
-   GNNPROB_DATA*         gnnprobdata         /**< data about optimization problem on GNN */
+   GNNPROB_DATA*         gnnprobdata,        /**< data about optimization problem on GNN */
+   char*                 problemname         /**< name of the problem to be solved */
    );
 
 #ifdef __cplusplus

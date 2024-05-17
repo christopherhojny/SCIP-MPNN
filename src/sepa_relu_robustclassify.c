@@ -986,7 +986,7 @@ SCIP_RETCODE separateCuts(
          sepadata->gnnoutputvars[0], sepadata->adjacencyvars, NULL, NULL, 0,
          &lbgnnoutputvars[0], &lbauxvars[0], &lbnodecontent[0],
          &ubgnnoutputvars[0], &ubauxvars[0], &ubnodecontent[0],
-         NULL, NULL, NULL, NULL) );
+         NULL, NULL, NULL, NULL, TRUE) );
 
    if( sepadata->maxncuts != -1 )
       tmpmaxncuts = sepadata->maxncuts;
@@ -1001,7 +1001,7 @@ SCIP_RETCODE separateCuts(
             sepadata->gnnoutputvars[l], sepadata->adjacencyvars, NULL, NULL, l,
             &lbgnnoutputvars[l], &lbauxvars[l], &lbnodecontent[l],
             &ubgnnoutputvars[l], &ubauxvars[l], &ubnodecontent[l],
-            lbgnnoutputvars[l-1], lbauxvars[l-1], ubgnnoutputvars[l-1], ubauxvars[l-1]) );
+            lbgnnoutputvars[l-1], lbauxvars[l-1], ubgnnoutputvars[l-1], ubauxvars[l-1], TRUE) );
 
       SCIP_CALL( separateCutsLayer(scip, sepa, sol, gnndata, l, sepadata->ngraphnodes,
             sepadata->adjacencyvars, sepadata->gnnoutputvars[l], sepadata->auxvars[l],

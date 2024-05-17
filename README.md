@@ -64,6 +64,9 @@ Shiqiang Zhang is funded by an Imperial College Hans Rausing PhD Scholarship.
 
     settings/{node,graph}classification_abt.set for aggressive bound tightening.
 
+    settings/graphclassification_obbt.set for bounds derived by OBBT for graph classification problems.
+
+
 3. When the binary is executed, log information of SCIP is printed to the terminal.
    This includes information about presolving and the solving process as well as
    statistics of SCIP and the best solution found during the solving process.

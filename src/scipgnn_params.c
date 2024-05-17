@@ -9,6 +9,8 @@
 #define DEFAULT_ROBUSTCLASSIFY_USEINPUTBASEDBOUNDS TRUE
 #define DEFAULT_NODECLASSIFY_USEENHANCEDBOUNDS     TRUE
 #define DEFAULT_NODECLASSIFY_USEINPUTBASEDBOUNDS   TRUE
+#define DEFAULT_ROBUSTCLASSIFY_USEOBBT            FALSE
+#define DEFAULT_ROBUSTCLASSIFY_WRITEBOUNDS        FALSE
 #define DEFAULT_ONLYWRITEMODEL                       ""
 #define DEFAULT_ONLYCHECKSOL                         ""
 
@@ -26,6 +28,14 @@ SCIP_RETCODE createSCIPGNNParams(
    SCIP_CALL( SCIPaddBoolParam(scip, "gnn/robustclassify/useinputbasedbounds",
          "whether bounds for all variables shall take bounds on input into account",
          NULL, FALSE, DEFAULT_ROBUSTCLASSIFY_USEINPUTBASEDBOUNDS, NULL, NULL) );
+
+   SCIP_CALL( SCIPaddBoolParam(scip, "gnn/robustclassify/useobbt",
+         "whether OBBT shall be used to compute initial bounds",
+         NULL, FALSE, DEFAULT_ROBUSTCLASSIFY_USEOBBT, NULL, NULL) );
+
+   SCIP_CALL( SCIPaddBoolParam(scip, "gnn/robustclassify/writebounds",
+         "whether bounds for all variables shall be written to a file",
+         NULL, FALSE, DEFAULT_ROBUSTCLASSIFY_WRITEBOUNDS, NULL, NULL) );
 
    SCIP_CALL( SCIPaddBoolParam(scip, "gnn/nodeclassify/useenhancedbounds",
          "whether enhanced bounds adapted to the node classification problem shall be used",

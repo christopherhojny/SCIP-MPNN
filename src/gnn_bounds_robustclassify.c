@@ -343,7 +343,8 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
    SCIP_Real**           ubnodecontent,      /**< pointer to array storing upper bounds on node content before
                                               *   applying an activation function */
    SCIP_Real*            lbgnnoutputvarsprev, /**< lower bounds on output variables from previous layer */
-   SCIP_Real*            ubgnnoutputvarsprev  /**< upper bounds on output variables from previous layer */
+   SCIP_Real*            ubgnnoutputvarsprev, /**< upper bounds on output variables from previous layer */
+   SCIP_Bool             allocatearrays      /**< whether arrays for bounds need to be allocated */
    )
 {
    GNN_ACTIVATIONTYPE activationtype;
@@ -379,7 +380,10 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
     */
 
    /* input of activation functions */
-   SCIP_CALL( SCIPallocBlockMemoryArray(scip, lbnodecontent, nentries) );
+   if( allocatearrays )
+   {
+      SCIP_CALL( SCIPallocBlockMemoryArray(scip, lbnodecontent, nentries) );
+   }
    SCIP_CALL( SCIPallocBufferArray(scip, &weightbuffer, ngraphnodes - 1) );
    i = 0;
    for( v = 0; v < ngraphnodes; ++v )
@@ -392,7 +396,10 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
          (*lbnodecontent)[i++] = bound;
       }
    }
-   SCIP_CALL( SCIPallocBlockMemoryArray(scip, ubnodecontent, nentries) );
+   if( allocatearrays )
+   {
+      SCIP_CALL( SCIPallocBlockMemoryArray(scip, ubnodecontent, nentries) );
+   }
    i = 0;
    for( v = 0; v < ngraphnodes; ++v )
    {
@@ -407,7 +414,10 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
    SCIPfreeBufferArray(scip, &weightbuffer);
 
    /* output of activation functions */
-   SCIP_CALL( SCIPallocBlockMemoryArray(scip, lbgnnoutputvars, nentries) );
+   if( allocatearrays )
+   {
+      SCIP_CALL( SCIPallocBlockMemoryArray(scip, lbgnnoutputvars, nentries) );
+   }
    i = 0;
    for( v = 0; v < ngraphnodes; ++v )
    {
@@ -426,7 +436,10 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
          ++i;
       }
    }
-   SCIP_CALL( SCIPallocBlockMemoryArray(scip, ubgnnoutputvars, nentries) );
+   if( allocatearrays )
+   {
+      SCIP_CALL( SCIPallocBlockMemoryArray(scip, ubgnnoutputvars, nentries) );
+   }
    i = 0;
    for( v = 0; v < ngraphnodes; ++v )
    {
@@ -448,7 +461,10 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
 
    /* lower and upper bounds on auxiliary variables */
    nentries *= ngraphnodes;
-   SCIP_CALL( SCIPallocBlockMemoryArray(scip, lbauxvars, nentries) );
+   if( allocatearrays )
+   {
+      SCIP_CALL( SCIPallocBlockMemoryArray(scip, lbauxvars, nentries) );
+   }
    for( v = 0, i = 0; v < ngraphnodes; ++v )
    {
       for( w = 0; w < ngraphnodes; ++w )
@@ -482,7 +498,10 @@ SCIP_RETCODE computeBoundsGNNSageLayer(
          }
       }
    }
-   SCIP_CALL( SCIPallocBlockMemoryArray(scip, ubauxvars, nentries) );
+   if( allocatearrays )
+   {
+      SCIP_CALL( SCIPallocBlockMemoryArray(scip, ubauxvars, nentries) );
+   }
    for( v = 0, i = 0; v < ngraphnodes; ++v )
    {
       for( w = 0; w < ngraphnodes; ++w )
@@ -535,7 +554,8 @@ SCIP_RETCODE SCIPcomputeBoundsGNNRobustClassifyLayer(
    SCIP_Real*            lbgnnoutputvarsprev, /**< lower bounds on output at previous GNN layer */
    SCIP_Real*            lbauxvarsprev,      /**< lower bounds on auxiliary variables at previous layer */
    SCIP_Real*            ubgnnoutputvarsprev, /**< upper bounds on output at previous GNN layer */
-   SCIP_Real*            ubauxvarsprev       /**< upper bounds on auxiliary variables at previous layer */
+   SCIP_Real*            ubauxvarsprev,      /**< upper bounds on auxiliary variables at previous layer */
+   SCIP_Bool             allocatearrays      /**< whether arrays for bounds need to be allocated */
    )
 {
    GNN_LAYERINFO_INPUT* inputinfo;
@@ -574,19 +594,19 @@ SCIP_RETCODE SCIPcomputeBoundsGNNRobustClassifyLayer(
       sageinfo = SCIPgetGNNLayerinfoSage(gnndata, layeridx);
       SCIP_CALL( computeBoundsGNNSageLayer(scip, sageinfo, adjacencymatrix, ngraphnodes, globalbudget, localbudget,
             gnnoutputvars,adjacencyvars, lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars,
-            ubauxvars, ubnodecontent, lbgnnoutputvarsprev, ubgnnoutputvarsprev) );
+            ubauxvars, ubnodecontent, lbgnnoutputvarsprev, ubgnnoutputvarsprev, allocatearrays) );
       break;
    case GNN_LAYERTYPE_POOL:
       poolinfo = SCIPgetGNNLayerinfoPool(gnndata, layeridx);
       SCIP_CALL( computeBoundsGNNPoolLayer(scip, poolinfo, ngraphnodes,
             lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent,
-            lbgnnoutputvarsprev, ubgnnoutputvarsprev) );
+            lbgnnoutputvarsprev, ubgnnoutputvarsprev, allocatearrays) );
       break;
    case GNN_LAYERTYPE_DENSE:
       denseinfo = SCIPgetGNNLayerinfoDense(gnndata, layeridx);
       SCIP_CALL( computeBoundsGNNDenseLayer(scip, denseinfo,
             lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent,
-            lbgnnoutputvarsprev, ubgnnoutputvarsprev) );
+            lbgnnoutputvarsprev, ubgnnoutputvarsprev, allocatearrays) );
       break;
    default:
       assert(FALSE);
@@ -653,7 +673,7 @@ SCIP_RETCODE SCIPcomputeBoundsGNNRobustClassify(
          globalbudget, localbudget, gnnoutvars, adjacencyvars, lbinput, ubinput, 0,
          &(*lbgnnoutputvars)[0], &(*lbauxvars)[0], &(*lbnodecontent)[0],
          &(*ubgnnoutputvars)[0], &(*ubauxvars)[0], &(*ubnodecontent)[0],
-         NULL, NULL, NULL, NULL) );
+         NULL, NULL, NULL, NULL, TRUE) );
    for( l = 1; l < nlayers; ++l )
    {
       if( gnnoutputvars != NULL )
@@ -664,7 +684,7 @@ SCIP_RETCODE SCIPcomputeBoundsGNNRobustClassify(
             globalbudget, localbudget, gnnoutvars, adjacencyvars, lbinput, ubinput, l,
             &(*lbgnnoutputvars)[l], &(*lbauxvars)[l], &(*lbnodecontent)[l],
             &(*ubgnnoutputvars)[l], &(*ubauxvars)[l], &(*ubnodecontent)[l],
-            (*lbgnnoutputvars)[l-1], (*lbauxvars)[l-1], (*ubgnnoutputvars)[l-1], (*ubauxvars)[l-1]) );
+            (*lbgnnoutputvars)[l-1], (*lbauxvars)[l-1], (*ubgnnoutputvars)[l-1], (*ubauxvars)[l-1], TRUE) );
    }
 
    return SCIP_OKAY;

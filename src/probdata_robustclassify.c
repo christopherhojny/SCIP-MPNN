@@ -33,6 +33,7 @@ struct SCIP_ProbData
    int*                  localbudget;        /**< array assigning each node an attack budget */
    int                   graphclassification; /**< index of feature the graph is classified as */
    int                   targetclassification; /**< index of feature a modified graph should be classified as */
+   SCIP_Bool             uselprelax;         /**< whether just the LP relaxation shall be solved */
 
    /* variables and constraints per layer of GNN */
    SCIP_VAR***           gnnoutputvars;      /**< variables modeling output values at nodes of GNN per layer*/
@@ -75,7 +76,8 @@ SCIP_RETCODE createAdjacencyVariable(
    SCIP*                 scip,               /**< SCIP data structure */
    SCIP_VAR**            var,                /**< pointer to store variable */
    int                   u,                  /**< index of first node */
-   int                   v                   /**< index of second node */
+   int                   v,                  /**< index of second node */
+   SCIP_Bool             iscontinuous        /**< whether variables are forced to be continuous */
    )
 {
    char name[SCIP_MAXSTRLEN];
@@ -84,7 +86,8 @@ SCIP_RETCODE createAdjacencyVariable(
 
    (void) SCIPsnprintf(name, SCIP_MAXSTRLEN, "adj_%d_%d", u, v);
 
-   SCIP_CALL( SCIPcreateVar(scip, var, name, 0.0, 1.0, 0.0, SCIP_VARTYPE_BINARY,
+   SCIP_CALL( SCIPcreateVar(scip, var, name, 0.0, 1.0, 0.0,
+         iscontinuous ? SCIP_VARTYPE_CONTINUOUS : SCIP_VARTYPE_BINARY,
          TRUE, FALSE, NULL, NULL, NULL, NULL, NULL) );
    SCIP_CALL( SCIPaddVar(scip, *var) );
 
@@ -209,7 +212,8 @@ SCIP_RETCODE probdataCreateBasic(
    int                   globalbudget,       /**< global attack budget on graph */
    int*                  localbudget,        /**< array assigning each node an attack budget */
    int                   graphclassification, /**< index of feature the graph is classified as */
-   int                   targetclassification /**< index of feature a modified graph should be classified as */
+   int                   targetclassification,/**< index of feature a modified graph should be classified as */
+   SCIP_Bool             uselprelax          /**< whether just the LP relaxation shall be solved */
    )
 {
    int nlayers;
@@ -231,6 +235,7 @@ SCIP_RETCODE probdataCreateBasic(
 
    (*targetprobdata)->gnndata = gnndata;
    (*targetprobdata)->nnodes = nnodes;
+   (*targetprobdata)->uselprelax = uselprelax;
    SCIP_CALL( SCIPduplicateBlockMemoryArray(scip, &(*targetprobdata)->adjacencymatrix, adjacencymatrix, nnodes) );
    for( i = 0; i < nnodes; ++i )
    {
@@ -294,7 +299,8 @@ static
 SCIP_RETCODE probdataCreateGlobal(
    SCIP*                 scip,               /**< SCIP data structure */
    SCIP_PROBDATA*        sourceprobdata,     /**< problem data which shall be copied (or NULL) */
-   SCIP_PROBDATA*        targetprobdata      /**< problem data to be created (basic information already assigned) */
+   SCIP_PROBDATA*        targetprobdata,     /**< problem data to be created (basic information already assigned) */
+   SCIP_Bool             uselprelax          /**< whether just the LP relaxation shall be solved */
    )
 {
    SCIP_Bool** adjmat;
@@ -340,7 +346,7 @@ SCIP_RETCODE probdataCreateGlobal(
       {
          for( j = i + 1; j < nnodes; ++j )
          {
-            SCIP_CALL( createAdjacencyVariable(scip, &targetprobdata->adjacencyvars[cnt++], i, j) );
+            SCIP_CALL( createAdjacencyVariable(scip, &targetprobdata->adjacencyvars[cnt++], i, j, uselprelax) );
          }
       }
 
@@ -481,7 +487,7 @@ SCIP_RETCODE createGNNOutputVarsLayer(
    SCIP_Real**           featurelb,          /**< (nnodes x nfeatures)-matrix of lower bounds on feature assignments */
    SCIP_Real**           featureub,          /**< (nnodes x nfeatures)-matrix of upper bounds on feature assignments */
    SCIP_Real*            lbs,                /**< array containing lower bounds on gnnoutputvars */
-   SCIP_Real*            ubs                 /**< array containing lower bounds on gnnoutputvars */
+   SCIP_Real*            ubs                /**< array containing lower bounds on gnnoutputvars */
    )
 {
    char name[SCIP_MAXSTRLEN];
@@ -603,7 +609,8 @@ SCIP_RETCODE createIsactiveVarsLayer(
    int                   nfeatures,          /**< number of features of layer */
    int                   layeridx,           /**< index of layer */
    SCIP_Real*            lbs,                /**< array containing lower bounds on gnnoutputvars */
-   SCIP_Real*            ubs                 /**< array containing lower bounds on gnnoutputvars */
+   SCIP_Real*            ubs,                /**< array containing lower bounds on gnnoutputvars */
+   SCIP_Bool             iscontinuous        /**< whether variables are forced to be continuous */
    )
 {
    char name[SCIP_MAXSTRLEN];
@@ -655,7 +662,8 @@ SCIP_RETCODE createIsactiveVarsLayer(
             ub = 1.0;
 
          SCIP_CALL( SCIPcreateVar(scip, &(*isactivevars)[cnt], name, lb, ub, 0.0,
-               SCIP_VARTYPE_BINARY, TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE) );
+               iscontinuous ? SCIP_VARTYPE_CONTINUOUS : SCIP_VARTYPE_BINARY,
+               TRUE, FALSE, FALSE, FALSE, FALSE, FALSE, FALSE) );
          SCIP_CALL( SCIPaddVar(scip, (*isactivevars)[cnt++]) );
       }
    }
@@ -1241,8 +1249,9 @@ SCIP_RETCODE probdataCreateLayer(
                                               *   applying an activation function */
    SCIP_Real**           ubgnnoutputvars,    /**< array of upper bounds output at GNN nodes */
    SCIP_Real**           ubauxvars,          /**< array of upper bound on auxiliary variables */
-   SCIP_Real**           ubnodecontent       /**< array storing upper bounds on node content before
+   SCIP_Real**           ubnodecontent,      /**< array storing upper bounds on node content before
                                               *   applying an activation function */
+   SCIP_Bool             uselprelax          /**< whether just the LP relaxation shall be solved */
    )
 {
    GNN_DATA* gnndata;
@@ -1363,7 +1372,7 @@ SCIP_RETCODE probdataCreateLayer(
             targetprobdata->auxvars[l] = NULL;
 
          SCIP_CALL( createIsactiveVarsLayer(scip, &targetprobdata->isactivevars[l], type, activation,
-               nnodes, nfeatures, l, lbgnnoutputvars[l], ubgnnoutputvars[l]) );
+               nnodes, nfeatures, l, lbgnnoutputvars[l], ubgnnoutputvars[l], uselprelax) );
          if( nauxvars > 0 && l > 0 )
          {
             SCIP_CALL( createLinkAuxConssLayer(scip, &targetprobdata->linkauxconss[l], type, activation,
@@ -1420,14 +1429,15 @@ SCIP_RETCODE createProbdata(
    SCIP_Real**           lbnodecontent,      /**< lower bounds on inputs for activatioin function (or NULL) */
    SCIP_Real**           ubgnnoutputvars,    /**< upper bounds on output variables (or NULL) */
    SCIP_Real**           ubauxvars,          /**< upper bounds on auxiliary variables (or NULL) */
-   SCIP_Real**           ubnodecontent       /**< upper bounds on inputs for activatioin function (or NULL) */
+   SCIP_Real**           ubnodecontent,      /**< upper bounds on inputs for activatioin function (or NULL) */
+   SCIP_Bool             uselprelax          /**< whether just the LP relaxation shall be solved */
    )
 {
    SCIP_CALL( probdataCreateBasic(scip, targetdata, gnndata, nnodes, adjacencymatrix,
-         globalbudget, localbudget, origclass, targetclass) );
-   SCIP_CALL( probdataCreateGlobal(scip, sourcedata, *targetdata) );
+         globalbudget, localbudget, origclass, targetclass, uselprelax) );
+   SCIP_CALL( probdataCreateGlobal(scip, sourcedata, *targetdata, uselprelax) );
    SCIP_CALL( probdataCreateLayer(scip, sourcedata, *targetdata, featurelb, featureub,
-         lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent) );
+         lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent, uselprelax) );
 
    return SCIP_OKAY;
 }
@@ -1757,7 +1767,7 @@ SCIP_DECL_PROBTRANS(probtransRobustClassify)
    SCIP_CALL( createProbdata(scip, sourcedata, targetdata, sourcedata->gnndata, sourcedata->nnodes,
       sourcedata->adjacencymatrix, sourcedata->globalbudget, sourcedata->localbudget,
          sourcedata->graphclassification, sourcedata->targetclassification,
-         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL) );
+         NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, sourcedata->uselprelax) );
 
    SCIP_CALL( transformData(scip, *targetdata) );
 
@@ -1777,8 +1787,9 @@ SCIP_RETCODE SCIPprobdataCreateRobustClassify(
                                               *   applying an activation function */
    SCIP_Real**           ubgnnoutputvars,    /**< array of upper bounds output at GNN nodes */
    SCIP_Real**           ubauxvars,          /**< array of upper bound on auxiliary variables */
-   SCIP_Real**           ubnodecontent       /**< array storing upper bounds on node content before
+   SCIP_Real**           ubnodecontent,      /**< array storing upper bounds on node content before
                                               *   applying an activation function */
+   SCIP_Bool             uselprelax          /**< whether we just want to solve the LP relaxation */
    )
 {
    GNNPROB_ROBUSTCLASSIFY* rcprobdata;
@@ -1823,9 +1834,12 @@ SCIP_RETCODE SCIPprobdataCreateRobustClassify(
 
    SCIP_CALL( createProbdata(scip, NULL, &probdata, gnndata, nnodes, adjacencymatrix,
          globalbudget, localbudget, graphclassification, targetclassification, featurelb, featureub,
-         lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent) );
+         lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent, uselprelax) );
 
-   SCIP_CALL( setObjective(scip, gnndata, probdata->gnnoutputvars, graphclassification, targetclassification) );
+   if( ! uselprelax )
+   {
+      SCIP_CALL( setObjective(scip, gnndata, probdata->gnnoutputvars, graphclassification, targetclassification) );
+   }
 
    /* set user problem data */
    SCIP_CALL( SCIPsetProbData(scip, probdata) );
@@ -1912,4 +1926,58 @@ SCIP_VAR** SCIPgetProbdataRobustClassifyAdjacencyVars(
 {
    assert(probdata!= NULL);
    return probdata->adjacencyvars;
+}
+
+/** sets objective for a neuron for OBBT */
+SCIP_RETCODE SCIPsetOBBTobjective(
+   SCIP*                 scip,               /**< SCIP data structure */
+   int                   nfeatures,          /**< number of features */
+   int                   layeridx,           /**< index of layer */
+   int                   nodeidx,            /**< index of node of underlying graph */
+   int                   featureidx,         /**< index of feature */
+   SCIP_Bool             maximize            /**< whether objective sense is maximization */
+   )
+{
+   SCIP_PROBDATA* probdata;
+
+   assert(scip != NULL);
+   assert(nodeidx >= 0);
+   assert(featureidx >= 0);
+
+   probdata = SCIPgetProbData(scip);
+
+   SCIP_CALL( SCIPchgVarObj(scip, probdata->gnnoutputvars[layeridx][nodeidx*nfeatures + featureidx], 1.0) );
+
+   if( maximize )
+   {
+      SCIP_CALL( SCIPsetObjsense(scip, SCIP_OBJSENSE_MAXIMIZE) );
+   }
+   else
+   {
+      SCIP_CALL( SCIPsetObjsense(scip, SCIP_OBJSENSE_MINIMIZE) );
+   }
+
+   return SCIP_OKAY;
+}
+
+/** resets objective for a neuron for OBBT */
+SCIP_RETCODE SCIPresetOBBTobjective(
+   SCIP*                 scip,               /**< SCIP data structure */
+   int                   nfeatures,          /**< number of features */
+   int                   layeridx,           /**< index of layer */
+   int                   nodeidx,            /**< index of node of underlying graph */
+   int                   featureidx          /**< index of feature */
+   )
+{
+   SCIP_PROBDATA* probdata;
+
+   assert(scip != NULL);
+   assert(nodeidx >= 0);
+   assert(featureidx >= 0);
+
+   probdata = SCIPgetProbData(scip);
+
+   SCIP_CALL( SCIPchgVarObj(scip, probdata->gnnoutputvars[layeridx][nodeidx*nfeatures + featureidx], 0.0) );
+
+   return SCIP_OKAY;
 }

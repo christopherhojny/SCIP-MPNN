@@ -588,13 +588,13 @@ SCIP_RETCODE SCIPcomputeBoundsGNNNodeClassifyLayer(
       poolinfo = SCIPgetGNNLayerinfoPool(gnndata, layeridx);
       SCIP_CALL( computeBoundsGNNPoolLayer(scip, poolinfo, ngraphnodes,
             lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent,
-            lbgnnoutputvarsprev, ubgnnoutputvarsprev) );
+            lbgnnoutputvarsprev, ubgnnoutputvarsprev, TRUE) );
       break;
    case GNN_LAYERTYPE_DENSE:
       denseinfo = SCIPgetGNNLayerinfoDense(gnndata, layeridx);
       SCIP_CALL( computeBoundsGNNDenseLayer(scip, denseinfo,
             lbgnnoutputvars, lbauxvars, lbnodecontent, ubgnnoutputvars, ubauxvars, ubnodecontent,
-            lbgnnoutputvarsprev, ubgnnoutputvarsprev) );
+            lbgnnoutputvarsprev, ubgnnoutputvarsprev, TRUE) );
       break;
    default:
       assert(FALSE);

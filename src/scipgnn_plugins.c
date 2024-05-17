@@ -1,4 +1,4 @@
-/**@file   scipgnn.c
+/**@file   scipgnn_plugins.c
  * @brief  load plugins for SCIP-GNN
  * @author Christopher Hojny
  */
